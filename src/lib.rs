@@ -16,6 +16,18 @@ struct Expression {
     tokens: Vec<Token>,
 }
 
+impl Expression {
+    fn apply_operator(left: f64, right: f64, op: char) -> Result<f64, String> {
+        match op {
+            '+' => Ok(left + right),
+            '-' => Ok(left - right),
+            '*' => Ok(left * right),
+            '/' => Ok(left / right),
+            _ => Err(format!("Invalid operator: {}", op)),
+        }
+    }
+}
+
 impl ExpressionParser for Expression {
     fn parse(input: &str) -> Result<Expression, String> {
         let mut tokens = Vec::new();
@@ -34,6 +46,7 @@ impl ExpressionParser for Expression {
                         'f' => Token::RightParen,
                         _ => continue,
                     };
+
                     if !current_token.is_empty() {
                         tokens.push(Token::Number(current_token.parse().unwrap()));
                         current_token.clear();
@@ -49,7 +62,7 @@ impl ExpressionParser for Expression {
             tokens.push(Token::Number(current_token.parse().unwrap()));
         }
 
-        Ok(Expression { tokens })
+        Ok(Self { tokens })
     }
 
     fn evaluate(&self) -> Result<f64, String> {
@@ -77,14 +90,10 @@ impl ExpressionParser for Expression {
 
                     let right_operand = operand_stack.pop().unwrap();
                     let left_operand = operand_stack.pop().unwrap();
+                    let op = operator_stack.pop().unwrap();
 
-                    operand_stack.push(match operator_stack.pop() {
-                        Some('+') => left_operand + right_operand,
-                        Some('-') => left_operand - right_operand,
-                        Some('*') => left_operand * right_operand,
-                        Some('/') => left_operand / right_operand,
-                        _ => return Err(format!("Invalid operator: {}", operator)),
-                    });
+                    operand_stack
+                        .push(Self::apply_operator(left_operand, right_operand, op).unwrap());
 
                     operator_stack.push(*operator)
                 }
@@ -98,17 +107,12 @@ impl ExpressionParser for Expression {
                     }
 
                     while operator_stack.last().unwrap() != &'(' {
-                        let operator = operator_stack.pop().unwrap();
+                        let op = operator_stack.pop().unwrap();
                         let right_operand = operand_stack.pop().unwrap();
                         let left_operand = operand_stack.pop().unwrap();
 
-                        operand_stack.push(match operator {
-                            '+' => left_operand + right_operand,
-                            '-' => left_operand - right_operand,
-                            '*' => left_operand * right_operand,
-                            '/' => left_operand / right_operand,
-                            _ => return Err(format!("Invalid operator: {}", operator)),
-                        });
+                        operand_stack
+                            .push(Self::apply_operator(left_operand, right_operand, op).unwrap());
                     }
 
                     last_was_operator = false;
@@ -122,14 +126,10 @@ impl ExpressionParser for Expression {
                 while operand_stack.len() > 1 {
                     let right_operand = operand_stack.pop().unwrap();
                     let left_operand = operand_stack.pop().unwrap();
+                    let op = operator_stack.pop().unwrap();
 
-                    operand_stack.push(match operator_stack.pop() {
-                        Some('+') => left_operand + right_operand,
-                        Some('-') => left_operand - right_operand,
-                        Some('*') => left_operand * right_operand,
-                        Some('/') => left_operand / right_operand,
-                        _ => return Err("Not enough operator to apply".to_owned()),
-                    });
+                    operand_stack
+                        .push(Self::apply_operator(left_operand, right_operand, op).unwrap());
                 }
                 Ok(operand_stack.pop().unwrap())
             } else {
@@ -168,4 +168,3 @@ mod tests {
         parse_3c4d2aee2a4c41fc4f: ("3c4d2aee2a4c41fc4f", 990_f64),
     }
 }
-// 3+(4*66)-32
