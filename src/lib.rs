@@ -24,22 +24,22 @@ impl ExpressionParser for Expression {
         for c in input.chars() {
             match c {
                 '0'..='9' => current_token.push(c),
-                'a' | 'b' | 'c' | 'd' => {
+                'a'..='f' => {
                     let op = match c {
-                        'a' => '+',
-                        'b' => '-',
-                        'c' => '*',
-                        'd' => '/',
+                        'a' => Token::Operator('+'),
+                        'b' => Token::Operator('-'),
+                        'c' => Token::Operator('*'),
+                        'd' => Token::Operator('/'),
+                        'e' => Token::LeftParen,
+                        'f' => Token::RightParen,
                         _ => continue,
                     };
                     if !current_token.is_empty() {
                         tokens.push(Token::Number(current_token.parse().unwrap()));
                         current_token.clear();
                     }
-                    tokens.push(Token::Operator(op));
+                    tokens.push(op);
                 }
-                'e' => tokens.push(Token::LeftParen),
-                'f' => tokens.push(Token::RightParen),
                 ' ' => continue,
                 _ => return Err(format!("Unexpected character: {}", c)),
             }
@@ -67,10 +67,6 @@ impl ExpressionParser for Expression {
                 Token::Operator(operator) => {
                     if operand_stack.is_empty() {
                         return Err(format!("Operator {} without operands", operator));
-                    } else if operator_stack.len() > 1 {
-                        return Err(format!("Too many consecutive operators"));
-                    } else if last_was_operator && operand_stack.len() < 2 {
-                        return Err(format!("Invalid expression"));
                     }
 
                     if !last_was_operator {
@@ -90,12 +86,12 @@ impl ExpressionParser for Expression {
                         _ => return Err(format!("Invalid operator: {}", operator)),
                     });
 
-                    // last_was_operator = true;
-                    println!("{:?}", operator_stack);
-                    // operator_stack.pop();
                     operator_stack.push(*operator)
                 }
-                Token::LeftParen => operator_stack.push('('),
+                Token::LeftParen => {
+                    operator_stack.push('(');
+                    last_was_operator = false;
+                }
                 Token::RightParen => {
                     if operator_stack.is_empty() {
                         return Err(format!("Unexpected right parenthesis"));
@@ -115,28 +111,32 @@ impl ExpressionParser for Expression {
                         });
                     }
 
+                    last_was_operator = false;
                     operator_stack.pop();
                 }
             }
         }
 
-        if operator_stack.len() == 1 {
-            if operand_stack.len() == 2 {
-                let right_operand = operand_stack.pop().unwrap();
-                let left_operand = operand_stack.pop().unwrap();
+        if operator_stack.len() > 0 {
+            if !operand_stack.is_empty() {
+                while operand_stack.len() > 1 {
+                    let right_operand = operand_stack.pop().unwrap();
+                    let left_operand = operand_stack.pop().unwrap();
 
-                match operator_stack.pop() {
-                    Some('+') => Ok(left_operand + right_operand),
-                    Some('-') => Ok(left_operand - right_operand),
-                    Some('*') => Ok(left_operand * right_operand),
-                    Some('/') => Ok(left_operand / right_operand),
-                    _ => return Err(format!("Invalid operator")),
+                    operand_stack.push(match operator_stack.pop() {
+                        Some('+') => left_operand + right_operand,
+                        Some('-') => left_operand - right_operand,
+                        Some('*') => left_operand * right_operand,
+                        Some('/') => left_operand / right_operand,
+                        _ => return Err("Not enough operator to apply".to_owned()),
+                    });
                 }
+                Ok(operand_stack.pop().unwrap())
             } else {
                 Err(format!("Too many operands"))
             }
         } else {
-            Err(format!("Too many operators"))
+            Ok(operand_stack.pop().unwrap())
         }
     }
 }
@@ -145,7 +145,7 @@ impl ExpressionParser for Expression {
 mod tests {
     use super::*;
 
-    macro_rules! parser_tests {
+    macro_rules! parameterize_tests {
         ($($name:ident: $value:expr,)*) => {
         $(
             #[test]
@@ -153,7 +153,6 @@ mod tests {
                 let (input, expected) = $value;
                 let expression = Expression::parse(input).unwrap();
 
-                println!("{:?}", expression.tokens);
                 assert_eq!(expression.evaluate().unwrap(), expected);
 
             }
@@ -161,10 +160,12 @@ mod tests {
         }
     }
 
-    parser_tests! {
-        parse_3a2c4: ("3a2c4", 20 as f64),
-        parse_32a2d2: ("32a2d2", 17 as f64),
-        parse_500a10b66c32: ("500a10b66c32", 14208 as f64),
-        // parser_3ae4c66fb32: ("3ae4c66fb32", 235 as f64),
+    parameterize_tests! {
+        parse_3a2c4: ("3a2c4", 20_f64),
+        parse_32a2d2: ("32a2d2", 17_f64),
+        parse_500a10b66c32: ("500a10b66c32", 14208_f64),
+        parse_3ae4c66fb32: ("3ae4c66fb32", 235_f64),
+        parse_3c4d2aee2a4c41fc4f: ("3c4d2aee2a4c41fc4f", 990_f64),
     }
 }
+// 3+(4*66)-32
