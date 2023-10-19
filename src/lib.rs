@@ -36,14 +36,14 @@ impl ExpressionParser for Expression {
         for c in input.chars() {
             match c {
                 '0'..='9' => current_token.push(c),
-                'a'..='f' => {
+                'a'..='f' | '+' | '-' | '*' | '/' | '(' | ')' => {
                     let op = match c {
-                        'a' => Token::Operator('+'),
-                        'b' => Token::Operator('-'),
-                        'c' => Token::Operator('*'),
-                        'd' => Token::Operator('/'),
-                        'e' => Token::LeftParen,
-                        'f' => Token::RightParen,
+                        'a' | '+' => Token::Operator('+'),
+                        'b' | '-' => Token::Operator('-'),
+                        'c' | '*' => Token::Operator('*'),
+                        'd' | '/' => Token::Operator('/'),
+                        'e' | '(' => Token::LeftParen,
+                        'f' | ')' => Token::RightParen,
                         _ => continue,
                     };
 

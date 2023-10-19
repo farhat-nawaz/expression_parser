@@ -4,7 +4,13 @@ This is a simple implementation of a parser that takes a string and computes its
 Operators are applied in order of precedence from left to right. An exception to this is brackets which are used to explicitly denote precedence by grouping parts of an expression that should be evaluated first.
 
 ### Rules:
-a = ‘+’, b = ‘-’, c = ‘*’, d = ‘/’, e = ‘(’, f = ‘)’
+Instead of using mathematical operators directly, following alphabatical mapping can also be used:
+- a => + 
+- b => - 
+- c => *
+- d => /
+- e => (
+- f => )
 
 ### Usage
 ```rust
