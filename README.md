@@ -19,3 +19,9 @@ let expression = Expression::parse(input).unwrap();
 
 let result = expression.evaluate().unwrap();
 ```
+
+### Running Tests
+Tests can be run using the following command:
+```bash
+$ cargo t
+```
