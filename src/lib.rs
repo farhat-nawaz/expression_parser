@@ -1,5 +1,7 @@
 trait ExpressionParser {
-    fn parse(input: &str) -> Result<Expression, String>;
+    type Output;
+
+    fn parse(input: &str) -> Result<Self::Output, String>;
     fn evaluate(&self) -> Result<f64, String>;
 }
 
@@ -29,7 +31,9 @@ impl Expression {
 }
 
 impl ExpressionParser for Expression {
-    fn parse(input: &str) -> Result<Expression, String> {
+    type Output = Expression;
+
+    fn parse(input: &str) -> Result<Self::Output, String> {
         let mut tokens = Vec::new();
         let mut current_token = String::new();
 
@@ -71,10 +75,6 @@ impl ExpressionParser for Expression {
         let mut last_was_operator = false;
 
         for token in &self.tokens {
-            println!(
-                "\nToken: {:?}\nOperand Stack: {:?}\nOperator Stack: {:?}",
-                token, operand_stack, operator_stack
-            );
             match token {
                 Token::Number(number) => operand_stack.push(*number),
                 Token::Operator(operator) => {
